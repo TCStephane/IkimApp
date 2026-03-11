@@ -27,7 +27,7 @@ def manage_members_menu():
         print("3. Remove Member")
         print("4. Return to Admin Menu")
 
-        choice = input("Choose option: ")
+        choice = input("Choose option you want: ")
 
         if choice == "1":
             name = input("Enter member name: ")
