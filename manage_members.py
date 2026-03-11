@@ -51,6 +51,6 @@ def manage_members_menu():
         else:
             print("Invalid choice, try again.")
 
-#this run  if the file is exuted directly
+#this one below  run when the file is exuted directly
 if __name__ == "__main__":
     manage_members_menu()
