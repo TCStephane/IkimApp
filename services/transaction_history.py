@@ -1,4 +1,4 @@
-def menu():
+def transaction_menu():
     while True:
         print("\n------Transaction History------\n")
         try:
@@ -22,4 +22,3 @@ def process(choice):
     elif choice == 4:
         print("oprion 4")
     
-menu()
