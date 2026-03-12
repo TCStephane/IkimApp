@@ -1,4 +1,4 @@
-def menu():
+def transaction_menu():
     while True:
         print("\n------Transaction History------\n")
         try:
