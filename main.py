@@ -22,7 +22,7 @@ def main_menu():
         if choice == "1":
             print("Manage Members - Feature not implemented yet.")
         elif choice == "2":
-            print("Record Contribution - Feature not implemented yet.")
+            log_payment()  # This now calls the function in models/contribution.py
         elif choice == "3":
             # This now calls the function in models/cycle.py
             cycle_menu() 
