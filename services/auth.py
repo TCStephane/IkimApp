@@ -13,7 +13,7 @@ def login():
                 print("Incorrect password. Try again.")
                 count +=1
             else:
-                for i in range(5, 0, -1):
+                for i in range(10, 0, -1):
                     print(f"Too many incorrect passwords try again in {i} seconds")
                     time.sleep(1)
                 count = 0
