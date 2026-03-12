@@ -51,5 +51,3 @@ def log_payment():
     payments.append(payment)
 
     print("Payment recorded successfully.")
-
-log_payment()
