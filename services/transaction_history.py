@@ -22,4 +22,4 @@ def process(choice):
     elif choice == 4:
         print("oprion 4")
     
-menu()
+transaction_menu()
