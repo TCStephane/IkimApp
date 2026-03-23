@@ -1,28 +1,57 @@
 from datetime import date
-"""class Contribution:
-    def __init__(self, member_id, cycle_id, amount, date):
+from database.db import fetch_one, fetch_all, execute_query
+
+class Contribution:
+    def __init__(self, member_id, amount, payment_date, payment_type):
         self.member_id = member_id
-        self.cycle_id = cycle_id
+        #self.cycle_id = cycle_id
         self.amount = amount
-        self.date = date
+        self.payment_date = payment_date
+        self.payment_type = payment_type
 
     def save(self):
-        pass
+        query = """
+        insert into contributions (member_id, amount, payment_date, payment_type)
+        values (?, ?, ?, ?)
+        """
+        params = (self.member_id, self.amount, self.payment_date, self.payment_type)
+        execute_query(query, params)
 
     @staticmethod
     def get_by_member(member_id):
-        pass
+        query = "SELECT * FROM contributions WHERE member_id = ?"
+        return fetch_one(query, (member_id,))
 
     @staticmethod
     def get_all():
-        pass"""
+        query = "SELECT * FROM contributions"
+        return fetch_all(query)
 
 def log_payment():
     print("\n--- Log Member Payment ---")
 
-    member_id = input("Enter Member ID: ")
-    amount = float(input("Enter Amount: "))
-    payments = []
+    try:
+        member_id = int(input("Enter Member ID: "))
+    except ValueError:
+        print("Please enter a valid member ID.")
+        return
+    
+    member = fetch_one("SELECT * FROM members WHERE member_id = ?", (member_id,))
+    if not member:
+        print("Member not found.")
+        return
+
+    try:
+        amount = float(input("Enter Payment Amount: "))
+        if amount <= 0:
+            print("Amount must be greater than zero.")
+            return
+    except ValueError:
+        print("Invalid Amount")
+        return
+    #payments = []
+
+    
 
     print("Payment Type:")
     print("1. Savings")
@@ -41,13 +70,20 @@ def log_payment():
         print("Invalid option")
         return
 
-    payment = {
-        "member_id": member_id,
-        "amount": amount,
-        "payment_type": payment_type,
-        "date": str(date.today())
-    }
+    contribution = Contribution(
+        member_id=member_id,
+        amount=amount,
+        payment_date=str(date.today()),
+        payment_type=payment_type
+    )
 
-    payments.append(payment)
+    success = contribution.save()
 
-    print("Payment recorded successfully.")
+    if success:
+        print("Payment recorded successfully.")
+    else:
+        print("Failed to record payment.")
+
+    #payments.append(payment)
+
+    #print("Payment recorded successfully.")
