@@ -2,7 +2,7 @@ def transaction_menu():
     while True:
         print("\n----Transaction History----")
         try:
-            choice  = int(input("Do you want to\n1.view all transactions\n2.View transactions of a specific person\n3.view transaction of a specific cycle\n4.view transaction of a specific person at aspecific time\n5.Back\n"))
+            choice  = int(input("Do you want to\n1.view all transactions\n2.View transactions of a specific person\n3.view transaction of a specific cycle\n4.view transaction of a specific person at a specific time\n5.Back\n"))
             if choice == 5:
                 break
             elif choice > 5 or choice < 1:
