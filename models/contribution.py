@@ -51,8 +51,6 @@ def log_payment():
         return
     #payments = []
 
-    
-
     print("Payment Type:")
     print("1. Savings")
     print("2. Loan Repayment")
