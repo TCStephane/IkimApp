@@ -15,4 +15,6 @@ DB_CONNECTION = mysql.connector.connect(
     )
 
 #create a database cursor
+#dictionary=True allows for us to access fields by their column names and not indexes. 
+# e.g cycles['start_date'] is easier to read than cycles[0]
 DB_CURSOR = DB_CONNECTION.cursor(dictionary=True)
