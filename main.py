@@ -19,7 +19,7 @@ def main_menu():
 
         choice = input("Enter your choice: ")
         if choice == "1":
-            print("Manage Members - Feature not implemented yet.")
+            manage_members_menu()
         elif choice == "2":
             print("Record Contribution - Feature not implemented yet.")
         elif choice == "3":
