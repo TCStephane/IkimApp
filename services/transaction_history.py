@@ -22,7 +22,7 @@ def display_transactions(rows):
     print("-" * 72)
     print(f"Total transactions shown: {len(rows)}\n")
 
-    
+
 # OPTION 1- View all transactions
 def view_all_transaction():
     query = """
@@ -87,6 +87,16 @@ def view_transactions_by_member():
         print(f"Error fetching transactions: {e}")
 
 #OPTION 3- View transactions within a cycle
+def view_transactions_by_cycle():
+    try:
+        cycle_id = int(input("Enter Cycle ID: "))
+    except ValueError:
+        print("Invalid input. Please enter a number.")
+        return
+    
+    
+
+#Main Menu
 def transaction_menu():
     while True:
         print("\n----Transaction History----")
