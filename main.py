@@ -22,7 +22,8 @@ def main_menu():
 
         choice = input("Enter your choice: ")
         if choice == "1":
-            print("Manage Members - Feature not implemented yet.")
+            #print("Manage Members - Feature not implemented yet.")
+            manage_members_menu()  # This now calls the function in models/member.py
         elif choice == "2":
             log_payment()  # This now calls the function in models/contribution.py
         elif choice == "3":

@@ -77,7 +77,6 @@ def log_payment():
     print("1. Savings")
     print("2. Loan Repayment")
     print("3. Interest")
-    print("4. Merry_go_round")
 
     choice = input("Select option: ")
 
@@ -87,8 +86,6 @@ def log_payment():
         payment_type = "Loan Repayment"
     elif choice == "3":
         payment_type = "Interest"
-    elif choice == "4":
-        payment_type = "Merry_go_round"
     else:
         print("Invalid option")
         return
