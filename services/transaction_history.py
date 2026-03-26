@@ -1,6 +1,6 @@
 from database.db_connection import DB_CONNECTION, DB_CURSOR
 
-#Helper
+#Helper to print a better way
 def display_transactions(rows):
     if not row:
         print("No transaction found")
@@ -94,7 +94,7 @@ def view_transactions_by_cycle():
         print("Invalid input. Please enter a number.")
         return
     
-    
+
 
 #Main Menu
 def transaction_menu():
