@@ -2,8 +2,11 @@ from services.auth import login
 from models.cycle import Cycle, cycle_menu
 from services.transaction_history import transaction_menu
 from models.member import manage_members_menu
+from models.transactions import log_payment
+#from database.db import initialize_db
 
 def start_app():
+    #initialize_db()
     login()
     main_menu()
 
@@ -19,9 +22,9 @@ def main_menu():
 
         choice = input("Enter your choice: ")
         if choice == "1":
-            manage_members_menu()
+            print("Manage Members - Feature not implemented yet.")
         elif choice == "2":
-            print("Record Contribution - Feature not implemented yet.")
+            log_payment()  # This now calls the function in models/contribution.py
         elif choice == "3":
             # This now calls the function in models/cycle.py
             cycle_menu() 

@@ -1,5 +1,5 @@
 
-members = []
+"""members = []
 
 def add_member(name):
     members.append(name)
@@ -52,3 +52,105 @@ def manage_members_menu():
             print("Invalid choice, try again.")
 
 #this one below  run when the file is exuted directly
+"""
+
+
+from datetime import date
+from database.db_connection import DB_CONNECTION, DB_CURSOR
+
+
+def add_member():
+    print("\n--- Add Member ---")
+    name = input("Enter member name: ").strip()
+    email = input("Enter member email: ").strip()
+    phone = input("Enter member phone: ").strip()
+
+    if not name or not email or not phone:
+        print("All fields are required.")
+        return
+
+    query = """
+    INSERT INTO members (member_name, date_added, email, phone)
+    VALUES (%s, %s, %s, %s)
+    """
+    params = (name, str(date.today()), email, phone)
+    try:
+        DB_CURSOR.execute(query, params)
+        DB_CONNECTION.commit()
+        print("Member added successfully.")
+    except Exception as e:
+        print(f"Error adding member: {e}")
+
+    #print("Member added successfully.")
+
+
+def view_members():
+    print("\n--- Members ---")
+    query = "SELECT * FROM members"
+    
+
+    try:
+        DB_CURSOR.execute(query)
+        members = DB_CURSOR.fetchall()
+    except Exception as e:
+        print(f"Failed to fetch members: {e}")
+        return
+
+    if not members:
+        print("No members found.")
+        return
+
+    for member in members:
+        print(
+            f"ID: {member['member_id']} | "
+            f"Name: {member['member_name']} | "
+            f"Email: {member['email']} | "
+            f"Phone: {member['phone']} | "
+            f"Date Added: {member['date_added']}"
+        )
+
+
+def remove_member():
+    view_members()
+
+    try:
+        member_id = int(input("Enter Member ID to remove: "))
+    except ValueError:
+        print("Please enter a valid number.")
+        return
+
+    query = "DELETE FROM members WHERE member_id = %s"
+
+    try:
+        DB_CURSOR.execute(query, (member_id,))
+        DB_CONNECTION.commit()
+
+        if DB_CURSOR.rowcount > 0:
+            print("Member removed successfully.")
+        else:
+            print("Member not found.")
+    except Exception as e:
+        print(f"Failed to remove member: {e}")
+
+
+def manage_members_menu():
+    while True:
+        print("\n--- Manage Members ---")
+        print("1. Add Member")
+        print("2. View Members")
+        print("3. Remove Member")
+        print("4. Return to Admin Menu")
+
+        choice = input("Choose option you want: ")
+
+        if choice == "1":
+            add_member()
+        elif choice == "2":
+            view_members()
+        elif choice == "3":
+            remove_member()
+        elif choice == "4":
+            print("Returning to Admin Menu...")
+            break
+        else:
+            print("Invalid choice, try again.")
