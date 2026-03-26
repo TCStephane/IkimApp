@@ -2,7 +2,27 @@ from database.db_connection import DB_CONNECTION, DB_CURSOR
 
 #Helper
 def display_transactions(rows):
+    if not row:
+        print("No transaction found")
+        return
+    
+    print("\n" + "-" * 72)
+    print(f"{'ID':<6} {'Member':<20} {'Amount':>10} {'Type':<18} {'Date':<12}")
+    print("-" * 72)
+ 
+    for row in rows:
+        print(
+            f"{row['contribution_id']:<6} "
+            f"{row['member_name']:<20} "
+            f"{row['amount']:>10.2f} "
+            f"{row['payment_type']:<18} "
+            f"{str(row['payment_date']):<12}"
+        )
+ 
+    print("-" * 72)
+    print(f"Total transactions shown: {len(rows)}\n")
 
+    
 # OPTION 1- View all transactions
 def view_all_transaction():
     query = """
