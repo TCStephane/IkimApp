@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import datetime
 from database.db_connection import DB_CONNECTION, DB_CURSOR
 
 class Contribution:
@@ -11,7 +11,7 @@ class Contribution:
 
     def save(self):
         query = """
-        insert into contributions (member_id, amount, payment_date, payment_type)
+        insert into transactions (member_id, amount, tx_datetime, transaction_type)
         values (%s, %s, %s, %s)
         """
         params = (self.member_id, self.amount, self.payment_date, self.payment_type)
@@ -35,7 +35,7 @@ class Contribution:
 
     @staticmethod
     def get_all():
-        query = "SELECT * FROM contributions"
+        query = "SELECT * FROM transactions"
         try:
             DB_CURSOR.execute(query)
             return DB_CURSOR.fetchall()
@@ -83,7 +83,7 @@ def log_payment():
     if choice == "1":
         payment_type = "Savings"
     elif choice == "2":
-        payment_type = "Loan Repayment"
+        payment_type = "Loan_repayment"
     elif choice == "3":
         payment_type = "Interest"
     else:
@@ -93,7 +93,7 @@ def log_payment():
     contribution = Contribution(
         member_id=member_id,
         amount=amount,
-        payment_date=str(date.today()),
+        payment_date=str(datetime.now()),
         payment_type=payment_type
     )
 
