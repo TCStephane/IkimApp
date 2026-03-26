@@ -1,3 +1,72 @@
+from database.db_connection import DB_CONNECTION, DB_CURSOR
+
+#Helper
+def display_transactions(rows):
+
+# OPTION 1- View all transactions
+def view_all_transaction():
+    query = """
+        SELECT
+            c.contribution_id,
+            m.member_name,
+            c.amount,
+            c.payment_type,
+            c.payment_date
+        FROM contributions c
+        JOIN members m ON c.member_id = m.member_id
+        ORDER BY c.payment_date DESC
+    """
+    try:
+        DB_CURSOR.execute(query)
+        rows = DB_CURSOR.fetchall()
+        display_transactions(rows)
+    except Exception as e:
+        print(f"Error fetching transaction: {e}")
+
+#OPTION 2- View Transactions for one member
+def view_transactions_by_member():
+    try:
+        member_id = int(input("Enter Member ID: "))
+    except ValueError:
+        print("Invalid input. Please enter a number.")
+        return
+    
+    try:
+        DB_CURSOR.execute(
+            "SELECT member_name FROM members WHERE member_id = %s",
+            (member_id)
+        )
+        member = DB_CURSOR.fetchone()
+    except Exception as e:
+        print(f"Error looking up member: {e}")
+        return
+    
+    if not member:
+        print(f"No member found with ID {member_id}")
+        return
+    
+    print(f"\nShowing transaction for: {member['member_name']}")
+
+    query = """
+        SELECT
+            c.contribution_id,
+            m.member_name,
+            c.amount,
+            c.payment_type,
+            c.payment_date
+        FROM contributions c
+        JOIN members m ON c.member_id = m.member_id
+        WHERE c.member_id = %s
+        ORDER BY c.payment_date DESC
+    """
+    try:
+        DB_CURSOR.execute(query, (member_id))
+        rows = DB_CURSOR.fetchall()
+        display_transactions(rows)
+    except Exception as e:
+        print(f"Error fetching transactions: {e}")
+
+#OPTION 3- View transactions within a cycle
 def transaction_menu():
     while True:
         print("\n----Transaction History----")
