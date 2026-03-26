@@ -2,7 +2,7 @@ from services.auth import login
 from models.cycle import Cycle, cycle_menu
 from services.transaction_history import transaction_menu
 from models.member import manage_members_menu
-from models.contribution import log_payment
+from models.transactions import log_payment
 #from database.db import initialize_db
 
 def start_app():

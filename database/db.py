@@ -1,4 +1,4 @@
-import sqlite3
+"""import sqlite3
 from config import DB_PATH
 
 def connect_db():
@@ -61,4 +61,4 @@ def fetch_all(query, params=None):
         conn.close()
 
 def commit_changes():
-    pass
+    pass"""

@@ -1,5 +1,62 @@
+
+"""members = []
+
+def add_member(name):
+    members.append(name)
+    print(name, "added successfully.")
+
+def view_members():
+    if len(members) == 0:
+        print("No members found.")
+    else:
+        for i in range(len(members)):
+            print(i + 1, "-", members[i])
+
+def remove_member(number):
+    if number > 0 and number <= len(members):
+        removed = members.pop(number - 1)
+        print(removed, "removed successfully.")
+    else:
+        print("Invalid member number")
+
+def manage_members_menu():
+    while True:
+        print("\n--- Manage Members ---")
+        print("1. Add Member")
+        print("2. View Members")
+        print("3. Remove Member")
+        print("4. Return to Admin Menu")
+
+        choice = input("Choose option you want: ")
+
+        if choice == "1":
+            name = input("Enter member name: ")
+            add_member(name)
+
+        elif choice == "2":
+            view_members()
+
+        elif choice == "3":
+            view_members()
+            try:
+                number = int(input("Enter member number to remove: "))
+                remove_member(number)
+            except ValueError:
+                print("Please enter a valid number.")
+
+        elif choice == "4":
+            print("Returning to Admin Menu...")
+            break
+
+        else:
+            print("Invalid choice, try again.")
+
+#this one below  run when the file is exuted directly
+"""
+
+
 from datetime import date
-from database.db import execute_query, fetch_all
+from database.db_connection import DB_CONNECTION, DB_CURSOR
 
 
 def add_member():
@@ -7,29 +64,37 @@ def add_member():
     name = input("Enter member name: ").strip()
     email = input("Enter member email: ").strip()
     phone = input("Enter member phone: ").strip()
-    address = input("Enter physical address: ").strip()
 
     if not name or not email or not phone:
         print("All fields are required.")
         return
 
     query = """
-    INSERT INTO members (member_name, date_added, email_address, phone_number, physical_address)
-    VALUES (%s, %s, %s, %s, %s)
+    INSERT INTO members (member_name, date_added, email, phone)
+    VALUES (%s, %s, %s, %s)
     """
-    params = (name, date.today(), email, phone, address)
-
-    success = execute_query(query, params)
-    if success:
+    params = (name, str(date.today()), email, phone)
+    try:
+        DB_CURSOR.execute(query, params)
+        DB_CONNECTION.commit()
         print("Member added successfully.")
-    else:
-        print("Failed to add member.")
+    except Exception as e:
+        print(f"Error adding member: {e}")
+
+    #print("Member added successfully.")
 
 
 def view_members():
     print("\n--- Members ---")
     query = "SELECT * FROM members"
-    members = fetch_all(query)
+    
+
+    try:
+        DB_CURSOR.execute(query)
+        members = DB_CURSOR.fetchall()
+    except Exception as e:
+        print(f"Failed to fetch members: {e}")
+        return
 
     if not members:
         print("No members found.")
@@ -39,14 +104,15 @@ def view_members():
         print(
             f"ID: {member['member_id']} | "
             f"Name: {member['member_name']} | "
-            f"Email: {member['email_address']} | "
-            f"Phone: {member['phone_number']} | "
+            f"Email: {member['email']} | "
+            f"Phone: {member['phone']} | "
             f"Date Added: {member['date_added']}"
         )
 
 
 def remove_member():
     view_members()
+
     try:
         member_id = int(input("Enter Member ID to remove: "))
     except ValueError:
@@ -54,8 +120,17 @@ def remove_member():
         return
 
     query = "DELETE FROM members WHERE member_id = %s"
-    execute_query(query, (member_id,))
-    print("Member removed successfully.")
+
+    try:
+        DB_CURSOR.execute(query, (member_id,))
+        DB_CONNECTION.commit()
+
+        if DB_CURSOR.rowcount > 0:
+            print("Member removed successfully.")
+        else:
+            print("Member not found.")
+    except Exception as e:
+        print(f"Failed to remove member: {e}")
 
 
 def manage_members_menu():

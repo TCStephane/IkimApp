@@ -1,5 +1,5 @@
 from datetime import date
-from database.db import fetch_one, fetch_all, execute_query
+from database.db_connection import DB_CONNECTION, DB_CURSOR
 
 class Contribution:
     def __init__(self, member_id, amount, payment_date, payment_type):
@@ -12,20 +12,36 @@ class Contribution:
     def save(self):
         query = """
         insert into contributions (member_id, amount, payment_date, payment_type)
-        values (?, ?, ?, ?)
+        values (%s, %s, %s, %s)
         """
         params = (self.member_id, self.amount, self.payment_date, self.payment_type)
-        execute_query(query, params)
+        try:
+            DB_CURSOR.execute(query, params)
+            DB_CONNECTION.commit()
+            return True
+        except Exception as e:
+            print(f"Error saving contribution: {e}")
+            return False
 
     @staticmethod
     def get_by_member(member_id):
-        query = "SELECT * FROM contributions WHERE member_id = ?"
-        return fetch_one(query, (member_id,))
+        query = "SELECT * FROM contributions WHERE member_id = %s"
+        try:
+            DB_CURSOR.execute(query, (member_id,))
+            return DB_CURSOR.fetchone()
+        except Exception as e:
+            print(f"Error fetching contribution: {e}")
+            return None
 
     @staticmethod
     def get_all():
         query = "SELECT * FROM contributions"
-        return fetch_all(query)
+        try:
+            DB_CURSOR.execute(query)
+            return DB_CURSOR.fetchall()
+        except Exception as e:
+            print(f"Error fetching contributions: {e}")
+            return []
 
 def log_payment():
     print("\n--- Log Member Payment ---")
@@ -36,25 +52,32 @@ def log_payment():
         print("Please enter a valid member ID.")
         return
     
-    member = fetch_one("SELECT * FROM members WHERE member_id = ?", (member_id,))
+    try:
+        DB_CURSOR.execute("SELECT * FROM members WHERE member_id = %s", (member_id,))
+        member = DB_CURSOR.fetchone()
+    except Exception as e:
+        print(f"Error fetching member: {e}")
+        return
+
     if not member:
         print("Member not found.")
         return
-
+    
     try:
-        amount = float(input("Enter Payment Amount: "))
+        amount = float(input("Enter payment amount: "))
         if amount <= 0:
             print("Amount must be greater than zero.")
             return
     except ValueError:
-        print("Invalid Amount")
+        print("Please enter a valid amount.")
         return
-    #payments = []
+    
 
     print("Payment Type:")
     print("1. Savings")
     print("2. Loan Repayment")
-    print("3. Fine")
+    print("3. Interest")
+    print("4. Merry_go_round")
 
     choice = input("Select option: ")
 
@@ -63,7 +86,9 @@ def log_payment():
     elif choice == "2":
         payment_type = "Loan Repayment"
     elif choice == "3":
-        payment_type = "Fine"
+        payment_type = "Interest"
+    elif choice == "4":
+        payment_type = "Merry_go_round"
     else:
         print("Invalid option")
         return
