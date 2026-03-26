@@ -2,7 +2,7 @@ from database.db_connection import DB_CONNECTION, DB_CURSOR
 
 #Helper to print a better way
 def display_transactions(rows):
-    if not row:
+    if not rows:
         print("No transaction found")
         return
     
@@ -54,7 +54,7 @@ def view_transactions_by_member():
     try:
         DB_CURSOR.execute(
             "SELECT member_name FROM members WHERE member_id = %s",
-            (member_id)
+            (member_id,)
         )
         member = DB_CURSOR.fetchone()
     except Exception as e:
@@ -80,7 +80,7 @@ def view_transactions_by_member():
         ORDER BY c.payment_date DESC
     """
     try:
-        DB_CURSOR.execute(query, (member_id))
+        DB_CURSOR.execute(query, (member_id,))
         rows = DB_CURSOR.fetchall()
         display_transactions(rows)
     except Exception as e:
@@ -97,7 +97,7 @@ def view_transactions_by_cycle():
     try:
         DB_CURSOR.execute(
             "SELECT cycle_id, cycle_name, start_date, end_date FROM cycles WHERE cycle_id = %s",
-            (cycle_id)
+            (cycle_id,)
         )
         cycle = DB_CURSOR.fetchone()
     except Exception as e:
@@ -195,7 +195,7 @@ def process(choice):
     elif choice == 2:
         view_transactions_by_member()
     elif choice == 3:
-        view_transactions_by_cycle
+        view_transactions_by_cycle()
     elif choice == 4:
         view_transactions_by_member_and_date()
 
