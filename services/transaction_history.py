@@ -52,6 +52,36 @@ def view_all_cycles():
     print("-" * 56 + "\n")
 
 
+# HELPER - View all members (used as reference before picking a member)
+def view_all_members():
+    try:
+        DB_CURSOR.execute(
+            "SELECT member_id, member_name, phone_number, email_address, date_added "
+            "FROM members ORDER BY member_id ASC"
+        )
+        members = DB_CURSOR.fetchall()
+    except Exception as e:
+        print(f"Error fetching members: {e}")
+        return
+
+    if not members:
+        print("No members found.")
+        return
+
+    print("\n" + "-" * 72)
+    print(f"{'ID':<6} {'Name':<20} {'Phone':<15} {'Email':<25} {'Date Added':<12}")
+    print("-" * 72)
+    for m in members:
+        print(
+            f"{m['member_id']:<6} "
+            f"{m['member_name']:<20} "
+            f"{str(m['phone_number']):<15} "
+            f"{str(m['email_address']):<25} "
+            f"{str(m['date_added']):<12}"
+        )
+    print("-" * 72 + "\n")
+
+
 # OPTION 1 - View all transactions
 def view_all_transactions():
     query = """
@@ -73,9 +103,10 @@ def view_all_transactions():
         print(f"Error fetching transactions: {e}")
 
 
-# OPTION 2 - View transactions for a specific member
+# OPTION 3 - View transactions for a specific member
 def view_transactions_by_member():
-    print("Tip: Enter the numeric Member ID (e.g. 1, 2, 3).")
+    print("Tip: Use option 2 to see all members and their IDs first.")
+    print("     Then enter the numeric Member ID here (e.g. 1, 2, 3).")
     try:
         member_id = int(input("Enter Member ID: "))
     except ValueError:
@@ -118,9 +149,9 @@ def view_transactions_by_member():
         print(f"Error fetching transactions: {e}")
 
 
-# OPTION 3 - View transactions within a specific cycle
+# OPTION 5 - View transactions within a specific cycle
 def view_transactions_by_cycle():
-    print("Tip: Use option 3 to see all cycles and their IDs first.")
+    print("Tip: Use option 4 to see all cycles and their IDs first.")
     print("     Then enter the numeric Cycle ID here (e.g. 1, 2, 3).")
     try:
         cycle_id = int(input("Enter Cycle ID: "))
@@ -167,9 +198,10 @@ def view_transactions_by_cycle():
         print(f"Error fetching transactions: {e}")
 
 
-# OPTION 4 - View transactions for a specific member within a date range
+# OPTION 6 - View transactions for a specific member within a date range
 def view_transactions_by_member_and_date():
-    print("Tip: Enter the numeric Member ID (e.g. 1, 2, 3).")
+    print("Tip: Use option 2 to see all members and their IDs first.")
+    print("     Then enter the numeric Member ID here (e.g. 1, 2, 3).")
     try:
         member_id = int(input("Enter Member ID: "))
     except ValueError:
@@ -229,12 +261,14 @@ def process(choice):
     if choice == 1:
         view_all_transactions()
     elif choice == 2:
-        view_transactions_by_member()
+        view_all_members()
     elif choice == 3:
-        view_all_cycles()
+        view_transactions_by_member()
     elif choice == 4:
-        view_transactions_by_cycle()
+        view_all_cycles()
     elif choice == 5:
+        view_transactions_by_cycle()
+    elif choice == 6:
         view_transactions_by_member_and_date()
 
 
@@ -245,17 +279,18 @@ def transaction_menu():
         try:
             choice = int(input(
                 "1. View all transactions\n"
-                "2. View transactions of a specific member\n"
-                "3. View all cycles\n"
-                "4. View transactions of a specific cycle\n"
-                "5. View transactions of a specific member within a date range\n"
-                "6. Back\n"
+                "2. View all members\n"
+                "3. View transactions of a specific member\n"
+                "4. View all cycles\n"
+                "5. View transactions of a specific cycle\n"
+                "6. View transactions of a specific member within a date range\n"
+                "7. Back\n"
                 "Enter choice: "
             ))
-            if choice == 6:
+            if choice == 7:
                 break
-            elif choice < 1 or choice > 6:
-                print("Invalid input. Enter a number between 1 and 6.")
+            elif choice < 1 or choice > 7:
+                print("Invalid input. Enter a number between 1 and 7.")
             else:
                 process(choice)
         except ValueError:
