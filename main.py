@@ -1,14 +1,13 @@
+#import methods from other group members
 from services.auth import login
 from models.cycle import Cycle, cycle_menu
 from services.transaction_history import transaction_menu
 from models.member import manage_members_menu
-from models.transactions import log_payment
-#from database.db import initialize_db
+from models.transactions import log_payment 
 
-def start_app():
-    #initialize_db()
+def start_app(): 
     login()
-    main_menu()
+    main_menu() #Show main menu only of login has passed
 
 def main_menu():
     while True:
