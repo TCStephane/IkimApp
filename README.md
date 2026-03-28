@@ -1,7 +1,3 @@
-Here is a streamlined, professional version of your `README.md`. It focuses on functionality and architecture while removing the verbose "field details" to make it more readable for developers and stakeholders.
-
----
-
 # IkimApp: Community Savings Group Manager (Ikimina)
 
 A robust Python CLI application designed to digitize and automate **Ikimina** (informal savings groups) in Rwanda. This tool replaces manual paper records with a structured database to manage member contributions, rotating payout schedules (Merry-Go-Round), and financial reporting.
@@ -70,10 +66,3 @@ IkimApp/
 1.  **Clone the Repo**: `git clone https://github.com/youruser/ikimapp.git`
 2.  **Install Dependencies**: `pip install -r requirements.txt`
 3.  **Launch**: `python main.py`
-
-> **Note**: On first launch, the admin will be prompted to set up credentials. All Ikimina rotations are calculated from the current date forward for 12 months.
-
----
-**BSE Year 1 · African Leadership University · Kigali, Rwanda**
-
-Would you like me to add a specific "User Roles" section to define what the Admin vs. Treasurer can access?
