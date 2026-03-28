@@ -7,9 +7,10 @@ from models.cycle import cycle_menu
 from services.transaction_history import transaction_menu
 from models.member import manage_members_menu
 from models.transactions import log_payment
+from services.reports import reports_menu
 
 def start_app():
-    """
+    """ 
     Starts the application.
     1. Prompts the user to login.
     2. Shows the main menu only after successful login.
@@ -47,7 +48,7 @@ def main_menu():
             cycle_menu()            # Function in models/cycle.py
         elif choice == "4":
             # Placeholder: Generate report (feature to implement)
-            print("Feature not implemented yet.")
+            reports_menu()
         elif choice == "5":
             # View transaction history
             transaction_menu()      # Function in services/transaction_history.py

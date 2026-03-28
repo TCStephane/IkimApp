@@ -1,16 +1,24 @@
+#import required modules
 from database.db_connection import DB_CONNECTION, DB_CURSOR
+from datetime import datetime
+from models.member import view_members
 
 
-# Helper to print transactions in a formatted table
 def display_transactions(rows):
+    """
+    Formally displays transaction data in a tabular format.
+    Ensures 'amount' is formatted to two decimal places.
+    """
     if not rows:
-        print("No transactions found.")
+        print("\n[!] No transactions found for this selection.")
         return
 
+    # Header Definition
     print("\n" + "-" * 76)
     print(f"{'ID':<6} {'Member':<20} {'Amount':>10} {'Type':<18} {'Date & Time':<20}")
     print("-" * 76)
 
+    # Data Rows
     for row in rows:
         print(
             f"{row['transaction_id']:<6} "
@@ -24,274 +32,185 @@ def display_transactions(rows):
     print(f"Total transactions shown: {len(rows)}\n")
 
 
-# HELPER - View all cycles (used as reference before picking a cycle)
-def view_all_cycles():
-    try:
-        DB_CURSOR.execute(
-            "SELECT cycle_id, cycle_name, start_date, end_date FROM cycles ORDER BY cycle_id ASC"
-        )
-        cycles = DB_CURSOR.fetchall()
-    except Exception as e:
-        print(f"Error fetching cycles: {e}")
-        return
-
-    if not cycles:
-        print("No cycles found.")
-        return
-
-    print("\n" + "-" * 56)
-    print(f"{'ID':<6} {'Cycle Name':<20} {'Start':<12} {'End':<12}")
-    print("-" * 56)
-    for c in cycles:
-        print(
-            f"{c['cycle_id']:<6} "
-            f"{c['cycle_name']:<20} "
-            f"{str(c['start_date']):<12} "
-            f"{str(c['end_date']):<12}"
-        )
-    print("-" * 56 + "\n")
-
-
-# HELPER - View all members (used as reference before picking a member)
-def view_all_members():
-    try:
-        DB_CURSOR.execute(
-            "SELECT member_id, member_name, phone_number, email_address, date_added "
-            "FROM members ORDER BY member_id ASC"
-        )
-        members = DB_CURSOR.fetchall()
-    except Exception as e:
-        print(f"Error fetching members: {e}")
-        return
-
-    if not members:
-        print("No members found.")
-        return
-
-    print("\n" + "-" * 72)
-    print(f"{'ID':<6} {'Name':<20} {'Phone':<15} {'Email':<25} {'Date Added':<12}")
-    print("-" * 72)
-    for m in members:
-        print(
-            f"{m['member_id']:<6} "
-            f"{m['member_name']:<20} "
-            f"{str(m['phone_number']):<15} "
-            f"{str(m['email_address']):<25} "
-            f"{str(m['date_added']):<12}"
-        )
-    print("-" * 72 + "\n")
-
-
-# OPTION 1 - View all transactions
 def view_all_transactions():
+    """Fetches every transaction in the system, newest first."""
     query = """
-        SELECT
-            t.transaction_id,
-            m.member_name,
-            t.amount,
-            t.transaction_type,
-            t.tx_datetime
+        SELECT t.transaction_id, m.member_name, t.amount, t.transaction_type, t.tx_datetime
         FROM transactions t
         JOIN members m ON t.member_id = m.member_id
         ORDER BY t.tx_datetime DESC
     """
     try:
         DB_CURSOR.execute(query)
-        rows = DB_CURSOR.fetchall()
-        display_transactions(rows)
+        display_transactions(DB_CURSOR.fetchall())
     except Exception as e:
         print(f"Error fetching transactions: {e}")
 
 
-# OPTION 3 - View transactions for a specific member
 def view_transactions_by_member():
-    print("Tip: Use option 2 to see all members and their IDs first.")
-    print("     Then enter the numeric Member ID here (e.g. 1, 2, 3).")
+    """Filters transactions based on a specific Member ID."""
     try:
         member_id = int(input("Enter Member ID: "))
-    except ValueError:
-        print("Invalid input. Please enter a number.")
-        return
-
-    try:
-        DB_CURSOR.execute(
-            "SELECT member_name FROM members WHERE member_id = %s",
-            (member_id,)
-        )
+        
+        # Verify member exists and get name
+        DB_CURSOR.execute("SELECT member_name FROM members WHERE member_id = %s", (member_id,))
         member = DB_CURSOR.fetchone()
-    except Exception as e:
-        print(f"Error looking up member: {e}")
-        return
+        
+        if not member:
+            print(f"Member ID {member_id} not found.")
+            return
 
-    if not member:
-        print(f"No member found with ID {member_id}.")
-        return
-
-    print(f"\nShowing transactions for: {member['member_name']}")
-
-    query = """
-        SELECT
-            t.transaction_id,
-            m.member_name,
-            t.amount,
-            t.transaction_type,
-            t.tx_datetime
-        FROM transactions t
-        JOIN members m ON t.member_id = m.member_id
-        WHERE t.member_id = %s
-        ORDER BY t.tx_datetime DESC
-    """
-    try:
+        print(f"\n>> History for: {member['member_name']}")
+        
+        query = """
+            SELECT t.transaction_id, m.member_name, t.amount, t.transaction_type, t.tx_datetime
+            FROM transactions t
+            JOIN members m ON t.member_id = m.member_id
+            WHERE t.member_id = %s
+            ORDER BY t.tx_datetime DESC
+        """
         DB_CURSOR.execute(query, (member_id,))
-        rows = DB_CURSOR.fetchall()
-        display_transactions(rows)
-    except Exception as e:
-        print(f"Error fetching transactions: {e}")
-
-
-# OPTION 5 - View transactions within a specific cycle
-def view_transactions_by_cycle():
-    print("Tip: Use option 4 to see all cycles and their IDs first.")
-    print("     Then enter the numeric Cycle ID here (e.g. 1, 2, 3).")
-    try:
-        cycle_id = int(input("Enter Cycle ID: "))
+        display_transactions(DB_CURSOR.fetchall())
     except ValueError:
-        print("Invalid input. Please enter a number.")
-        return
-
-    try:
-        DB_CURSOR.execute(
-            "SELECT cycle_id, cycle_name, start_date, end_date FROM cycles WHERE cycle_id = %s",
-            (cycle_id,)
-        )
-        cycle = DB_CURSOR.fetchone()
+        print("Invalid ID. Please enter a number.")
     except Exception as e:
-        print(f"Error looking up cycle: {e}")
-        return
+        print(f"Database error: {e}")
 
-    if not cycle:
-        print(f"No cycle found with ID {cycle_id}.")
-        return
 
-    print(
-        f"\nShowing transactions for: {cycle['cycle_name']} "
-        f"({cycle['start_date']} to {cycle['end_date']})"
-    )
-
-    query = """
-        SELECT
-            t.transaction_id,
-            m.member_name,
-            t.amount,
-            t.transaction_type,
-            t.tx_datetime
-        FROM transactions t
-        JOIN members m ON t.member_id = m.member_id
-        WHERE DATE(t.tx_datetime) BETWEEN %s AND %s
-        ORDER BY t.tx_datetime ASC
+def view_transactions_by_date_range():
+    """
+    Filters transactions for a member within a specific time period.
+    Performs real-time validation for date existence and logical order.
     """
     try:
-        DB_CURSOR.execute(query, (cycle['start_date'], cycle['end_date']))
-        rows = DB_CURSOR.fetchall()
-        display_transactions(rows)
-    except Exception as e:
-        print(f"Error fetching transactions: {e}")
+        #  Validate Member ID
+        member_id_input = input("Enter Member ID: ").strip()
+        if not member_id_input.isdigit():
+            print("[!] Invalid Member ID. Please enter numbers only.")
+            return
+        member_id = int(member_id_input)
 
-
-# OPTION 6 - View transactions for a specific member within a date range
-def view_transactions_by_member_and_date():
-    print("Tip: Use option 2 to see all members and their IDs first.")
-    print("     Then enter the numeric Member ID here (e.g. 1, 2, 3).")
-    try:
-        member_id = int(input("Enter Member ID: "))
-    except ValueError:
-        print("Invalid input. Please enter a number.")
-        return
-
-    try:
-        DB_CURSOR.execute(
-            "SELECT member_name FROM members WHERE member_id = %s",
-            (member_id,)
-        )
-        member = DB_CURSOR.fetchone()
-    except Exception as e:
-        print(f"Error looking up member: {e}")
-        return
-
-    if not member:
-        print(f"No member found with ID {member_id}.")
-        return
-
-    print("Tip: Enter dates in YYYY-MM-DD format (e.g. 2026-01-01).")
-    start_date = input("Enter start date (YYYY-MM-DD): ").strip()
-    end_date   = input("Enter end date   (YYYY-MM-DD): ").strip()
-
-    if len(start_date) != 10 or len(end_date) != 10:
-        print("Invalid date format. Use YYYY-MM-DD (e.g. 2026-01-01).")
-        return
-
-    print(
-        f"\nShowing transactions for {member['member_name']} "
-        f"from {start_date} to {end_date}"
-    )
-
-    query = """
-        SELECT
-            t.transaction_id,
-            m.member_name,
-            t.amount,
-            t.transaction_type,
-            t.tx_datetime
-        FROM transactions t
-        JOIN members m ON t.member_id = m.member_id
-        WHERE t.member_id = %s
-          AND DATE(t.tx_datetime) BETWEEN %s AND %s
-        ORDER BY t.tx_datetime ASC
-    """
-    try:
-        DB_CURSOR.execute(query, (member_id, start_date, end_date))
-        rows = DB_CURSOR.fetchall()
-        display_transactions(rows)
-    except Exception as e:
-        print(f"Error fetching transactions: {e}")
-
-
-# Routes choice to the correct function
-def process(choice):
-    if choice == 1:
-        view_all_transactions()
-    elif choice == 2:
-        view_all_members()
-    elif choice == 3:
-        view_transactions_by_member()
-    elif choice == 4:
-        view_all_cycles()
-    elif choice == 5:
-        view_transactions_by_cycle()
-    elif choice == 6:
-        view_transactions_by_member_and_date()
-
-
-# Main menu for Transaction History
-def transaction_menu():
-    while True:
-        print("\n---- Transaction History ----")
+        # Input and Validate Start Date
+        start_date_str = input("Enter start date (YYYY-MM-DD): ").strip()
         try:
-            choice = int(input(
-                "1. View all transactions\n"
-                "2. View all members\n"
-                "3. View transactions of a specific member\n"
-                "4. View all cycles\n"
-                "5. View transactions of a specific cycle\n"
-                "6. View transactions of a specific member within a date range\n"
-                "7. Back\n"
-                "Enter choice: "
-            ))
-            if choice == 7:
-                break
-            elif choice < 1 or choice > 7:
-                print("Invalid input. Enter a number between 1 and 7.")
-            else:
-                process(choice)
+            start_date = datetime.strptime(start_date_str, "%Y-%m-%d")
         except ValueError:
-            print("Invalid input. Please enter a number.")
+            print("[!] Invalid Start Date. Use YYYY-MM-DD format (e.g., 2026-01-31).")
+            return
+
+        # Input and Validate End Date
+        end_date_str = input("Enter end date   (YYYY-MM-DD): ").strip()
+        try:
+            end_date = datetime.strptime(end_date_str, "%Y-%m-%d")
+        except ValueError:
+            print("[!] Invalid End Date. Use YYYY-MM-DD format.")
+            return
+
+        # Logical Check: Start must be before or equal to End
+        if start_date > end_date:
+            print(f"[!] Logic Error: Start date ({start_date_str}) cannot be after end date ({end_date_str}).")
+            return
+
+        #  Database Query        
+        query = """
+            SELECT t.transaction_id, m.member_name, t.amount, t.transaction_type, t.tx_datetime
+            FROM transactions t
+            JOIN members m ON t.member_id = m.member_id
+            WHERE t.member_id = %s 
+              AND DATE(t.tx_datetime) BETWEEN %s AND %s
+            ORDER BY t.tx_datetime ASC
+        """
+        
+        # We pass the original strings (start_date_str) to the SQL driver
+        DB_CURSOR.execute(query, (member_id, start_date_str, end_date_str))
+        results = DB_CURSOR.fetchall()
+        
+        display_transactions(results)
+
+    except Exception as e:
+        print(f"[!] An unexpected error occurred: {e}")
+
+# --- NEW FEATURE: CYCLE BENEFICIARIES ---
+
+def view_cycle_beneficiaries():
+    """
+    Displays the list of members scheduled to receive funds in a cycle.
+    Shows the expected amount vs. actual received funds and date.
+    """
+    print("\n--- Cycle Beneficiary List ---")
+    
+    # SQL Query based on the cycle_beneficiaries table columns
+    query = """
+        SELECT 
+            cb.cycle_benef_id,
+            cb.cycle_id,
+            m.member_name,
+            cb.amount,
+            cb.received_funds,
+            cb.received_date
+        FROM cycle_beneficiaries cb
+        JOIN members m ON cb.member_id = m.member_id
+        ORDER BY cb.cycle_id ASC, cb.cycle_benef_id ASC
+    """
+    
+    try:
+        DB_CURSOR.execute(query)
+        rows = DB_CURSOR.fetchall()
+
+        if not rows:
+            print("[!] No beneficiary records found.")
+            return
+
+        # Table Header
+        print("-" * 95)
+        print(f"{'ID':<6} {'Cycle':<8} {'Member Name':<20} {'Expected':>10} {'Received':>10} {'Date Received':<15}")
+        print("-" * 95)
+
+        for row in rows:
+            # Format 'None' or null dates and funds for cleaner reading
+            received_amt = f"{row['received_funds']:>10.2f}" if row['received_funds'] is not None else f"{'Pending':>10}"
+            received_dt = str(row['received_date']) if row['received_date'] else "Not Paid"
+
+            print(
+                f"{row['cycle_benef_id']:<6} "
+                f"{row['cycle_id']:<8} "
+                f"{row['member_name']:<20} "
+                f"{row['amount']:>10.2f} "
+                f"{received_amt} "
+                f"{received_dt:<15}"
+            )
+        print("-" * 95)
+
+    except Exception as e:
+        print(f"[!] Error fetching beneficiaries: {e}")
+
+
+def transaction_menu():
+    """
+    Main interface for Transaction and Beneficiary History.
+    """
+    while True:
+        print("\n========= Transaction History Menu =========")
+        print("1. View All Transactions")
+        print("2. Filter by Specific Member")
+        print("3. Filter by Member & Date Range") 
+        print("4. View Cycle Beneficiaries") # <-- New Entry
+        print("5. Back to Main Menu") 
+        
+        choice = input("Select an option: ").strip()
+
+        if choice == "1":
+            view_all_transactions()
+        elif choice == "2":
+            view_members() # show the member list so admin can select the right ID
+            view_transactions_by_member()
+        elif choice == "3":
+            view_members() # show the member list so admin can select the right ID
+            view_transactions_by_date_range() 
+        elif choice == "4":
+            view_cycle_beneficiaries()
+        elif choice == "5":
+            print("Returning to main menu...")
+            break
+        else:
+            print("Invalid choice. Please select 1-5.")
