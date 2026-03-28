@@ -2,7 +2,7 @@
 
 A robust Python CLI application designed to digitize and automate **Ikimina** (informal savings groups) in Rwanda. This tool replaces manual paper records with a structured database to manage member contributions, rotating payout schedules (Merry-Go-Round), and financial reporting.
 
-## 🏛 Database Schema
+## Database Schema
 
 The system runs on a relational SQLite/MySQL structure to ensure data integrity:
 
@@ -14,7 +14,7 @@ The system runs on a relational SQLite/MySQL structure to ensure data integrity:
 
 ---
 
-## 🚀 Key Modules & Features
+## Key Modules & Features
 
 ### 1. Member Management
 Handles the lifecycle of group participants.
@@ -43,7 +43,7 @@ Data-driven insights for group administrators.
 
 ---
 
-## 📂 Project Structure
+## Project Structure
 
 ```text
 IkimApp/
@@ -61,7 +61,7 @@ IkimApp/
 
 ---
 
-## ⚙️ Installation & Usage
+## Installation & Usage
 
 1.  **Clone the Repo**: `git clone https://github.com/youruser/ikimapp.git`
 2.  **Install Dependencies**: `pip install -r requirements.txt`
