@@ -1,124 +1,146 @@
 import datetime
-from database.db_connection import DB_CONNECTION, DB_CURSOR  # Import MySQL connection
-
-class Cycle:
-    def __init__(self, cycle_id, start_date, end_date, recipient_id=None):
-        self.cycle_id = cycle_id
-        self.start_date = start_date
-        self.end_date = end_date
-        self.recipient_id = recipient_id
-
-    def __str__(self):
-        recipient_name = CycleManager.get_member_name(self.recipient_id) if self.recipient_id else "Not assigned"
-        return (f"Cycle ID: {self.cycle_id} | Start: {self.start_date} | "
-                f"End: {self.end_date} | Recipient: {recipient_name}")
-
+from database.db_connection import DB_CONNECTION, DB_CURSOR
 
 class CycleManager:
 
-    @staticmethod
-    def get_member_name(member_id):
-        """Fetch a member's name from the DB"""
-        if not member_id:
-            return "Not assigned"
-        DB_CURSOR.execute("SELECT member_name FROM members WHERE member_id=%s", (member_id,))
-        row = DB_CURSOR.fetchone()
-        return row['member_name'] if row else "Unknown"
+    
+    def regenerate_schedule():
+        """
+        Automates the Ikimina 'Merry-Go-Round' schedule for a 12-month period.
+        Call this whenever a member is added or removed.
+        """
+        try:
+            # 1. Get all members (Ordered by join date to keep the 'queue' fair)
+            DB_CURSOR.execute("SELECT member_id, member_name FROM members ORDER BY date_added ASC")
+            members = DB_CURSOR.fetchall()
+            
+            if not members:
+                print("[!] No members found. Cannot generate schedule.")
+                return
 
-    @classmethod
-    def start_new_cycle(cls):
-        """Create a new cycle in the DB"""
-        # Simple date logic: start today, end in 7 days
-        start_date = datetime.date.today()
-        end_date = start_date + datetime.timedelta(days=6)
+            total_members = len(members)
+            current_date = datetime.date.today()
+            
+            # 2. Clear future cycles that haven't been 'paid out' yet
+            # This allows a fresh start for the new member count
+            DB_CURSOR.execute("DELETE FROM cycle_beneficiaries WHERE received_funds = 0")
+            DB_CURSOR.execute("DELETE FROM cycles WHERE start_date >= %s", (current_date,))
+            
+            print(f"--- Regenerating 12-Month Schedule for {total_members} members ---")
 
-        DB_CURSOR.execute(
-            "INSERT INTO cycles (cycle_name, start_date, end_date) VALUES (%s, %s, %s)",
-            (f"Cycle {start_date}", start_date, end_date)
-        )
-        DB_CONNECTION.commit()
-        new_id = DB_CURSOR.lastrowid
-        print(f"Successfully created Cycle ID {new_id}")
+            # 3. Generate 12 Monthly Slots
+            for i in range(12):
+                # Calculate month offset
+                # This handles month rollover (e.g., month 13 becomes January next year)
+                start_of_month = (current_date.replace(day=1) + datetime.timedelta(days=32 * i)).replace(day=1)
+                end_of_month = (start_of_month + datetime.timedelta(days=32)).replace(day=1) - datetime.timedelta(days=1)
+                
+                cycle_name = start_of_month.strftime("%B %Y")
+                
+                # Assign member using Modulo (%) logic
+                # If 4 members, index 0, 4, and 8 all point to the same member
+                member_to_benefit = members[i % total_members]
+                
+                # Insert into 'cycles'
+                DB_CURSOR.execute(
+                    "INSERT INTO cycles (cycle_name, start_date, end_date) VALUES (%s, %s, %s)",
+                    (cycle_name, start_of_month, end_of_month)
+                )
+                new_cycle_id = DB_CURSOR.lastrowid
+                
+                # Insert into 'cycle_beneficiaries'
+                # Note: 'amount' could be a fixed Ikimina contribution or calculated
+                DB_CURSOR.execute(
+                    "INSERT INTO cycle_beneficiaries (cycle_id, member_id, amount) VALUES (%s, %s, %s)",
+                    (new_cycle_id, member_to_benefit['member_id'], 0.00) 
+                )
 
-    @classmethod
-    def get_current_cycle(cls):
-        """Fetch the latest cycle from DB"""
-        DB_CURSOR.execute("SELECT * FROM cycles ORDER BY cycle_id DESC LIMIT 1")
-        row = DB_CURSOR.fetchone()
-        if not row:
-            print("No cycles found.")
-            return None
-        current = Cycle(row['cycle_id'], row['start_date'], row['end_date'], cls.get_cycle_recipient(row['cycle_id']))
-        print(f"--- Current Status ---\n{current}")
-        return current
+            DB_CONNECTION.commit()
+            print("[+] Success: 12-month rotation generated.")
 
-    @classmethod
-    def get_cycle_recipient(cls, cycle_id):
-        """Get the recipient (if any) of a cycle from cycle_beneficiaries"""
-        DB_CURSOR.execute(
-            "SELECT member_id FROM cycle_beneficiaries WHERE cycle_id=%s AND received_funds=0 LIMIT 1",
-            (cycle_id,)
-        )
-        row = DB_CURSOR.fetchone()
-        return row['member_id'] if row else None
+        except Exception as e:
+            DB_CONNECTION.rollback()
+            print(f"[!] Error regenerating schedule: {e}")
 
-    @classmethod
-    def update_recipient(cls, cycle_id, member_id):
-        """Assign a member as recipient for a cycle"""
-        # Check if member exists
-        DB_CURSOR.execute("SELECT * FROM members WHERE member_id=%s", (member_id,))
-        if not DB_CURSOR.fetchone():
-            print(f"Error: Member ID {member_id} does not exist.")
-            return
+    
+    def mark_payout(beneficiary_id):
+        """Records when a member actually receives the Ikimina pot."""
+        today = datetime.date.today()
+        query = """
+            UPDATE cycle_beneficiaries 
+            SET received_funds = 1, received_date = %s 
+            WHERE cycle_benef_id = %s
+        """
+        try:
+            DB_CURSOR.execute(query, (today, beneficiary_id))
+            DB_CONNECTION.commit()
+            print(f"Payout confirmed for ID {beneficiary_id}")
+        except Exception as e:
+            print(f"Error marking payout: {e}")
 
-        # Insert or update cycle_beneficiaries
-        DB_CURSOR.execute(
-            "INSERT INTO cycle_beneficiaries (cycle_id, member_id, amount) "
-            "VALUES (%s, %s, 0) "
-            "ON DUPLICATE KEY UPDATE member_id=%s",
-            (cycle_id, member_id, member_id)
-        )
-        DB_CONNECTION.commit()
-        print(f"Recipient updated to {cls.get_member_name(member_id)} for Cycle {cycle_id}")
+    
+    def view_schedule(cls):
+        """Displays the upcoming Merry-Go-Round queue with IDs for easy selection."""
+        # Added cb.cycle_benef_id to the SELECT for the payout logic
+        query = """
+            SELECT 
+                cb.cycle_benef_id, 
+                c.cycle_name, 
+                m.member_name, 
+                cb.received_funds
+            FROM cycles c
+            JOIN cycle_beneficiaries cb ON c.cycle_id = cb.cycle_id
+            JOIN members m ON cb.member_id = m.member_id
+            ORDER BY c.start_date ASC
+        """
+        
+        try:
+            DB_CURSOR.execute(query)
+            rows = DB_CURSOR.fetchall()
+            
+            if not rows:
+                print("\n[!] No schedule found. Please regenerate.")
+                return
 
-    @classmethod
-    def get_cycle_history(cls):
-        """Fetch all cycles and their recipients"""
-        DB_CURSOR.execute("SELECT * FROM cycles ORDER BY cycle_id ASC")
-        rows = DB_CURSOR.fetchall()
-        print("\n--- Full Cycle History ---")
-        for row in rows:
-            recipient_id = cls.get_cycle_recipient(row['cycle_id'])
-            c = Cycle(row['cycle_id'], row['start_date'], row['end_date'], recipient_id)
-            print(c)
+            # Adjusted Header to include ID
+            print(f"\n{'ID':<6} | {'Month':<18} | {'Beneficiary':<20} | {'Status'}")
+            print("-" * 65)
 
+            for row in rows:
+                status = "PAID" if row['received_funds'] else "Pending"
+                
+                # Printing the cycle_benef_id on the far left
+                print(
+                    f"{row['cycle_benef_id']:<6} | "
+                    f"{row['cycle_name']:<18} | "
+                    f"{row['member_name']:<20} | "
+                    f"{status}"
+                )
+            print("-" * 65)
+
+        except Exception as e:
+            print(f"[!] Error displaying schedule: {e}")
 
 def cycle_menu():
-    """UI Controller for Cycle operations"""
     while True:
-        print("\n--- Cycle Management ---")
-        print("1. Start New Cycle")
-        print("2. View Current Cycle")
-        print("3. Assign Recipient")
-        print("4. View All History")
-        print("5. Return to Main Menu")
+        print("\n--- Ikimina Cycle Management ---")
+        print("1. View Full 12-Month Schedule")
+        print("2. Regenerate Schedule ")
+        print("3. Record Payout (Member Received Pot)")
+        print("4. Return to Main Menu")
 
-        choice = input("Select an option: ")
+        choice = input("Action: ")
 
         if choice == "1":
-            CycleManager.start_new_cycle()
+            CycleManager.view_schedule()
         elif choice == "2":
-            CycleManager.get_current_cycle()
+            CycleManager.regenerate_schedule()
         elif choice == "3":
+            CycleManager.view_schedule()
             try:
-                cycle_id = int(input("Enter cycle ID: "))
-                m_id = int(input("Enter member ID: "))
-                CycleManager.update_recipient(cycle_id, m_id)
+                b_id = int(input("Enter ID from left column to mark as PAID: "))
+                CycleManager.mark_payout(b_id)
             except ValueError:
-                print("Invalid input! Please enter numeric IDs.")
+                print("Invalid ID.")
         elif choice == "4":
-            CycleManager.get_cycle_history()
-        elif choice == "5":
             break
-        else:
-            print("Invalid selection.")
