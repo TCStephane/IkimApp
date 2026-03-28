@@ -11,7 +11,8 @@ DB_CONNECTION = mysql.connector.connect(
         user=CONN_USER,
         password = CONN_PASS,
         database = CONN_DB_NAME,
-        ssl_disabled =CONN_SSL_DISABLED
+        ssl_disabled =CONN_SSL_DISABLED,
+        autocommit=True # create mnew connection each time
     )
 
 

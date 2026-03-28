@@ -38,8 +38,7 @@ def login():
     attempts = 0  # Track failed attempts
 
     while True:
-        print("\n--- Login ---")
-
+        print("\n--- User Login ---")
         # Get user input
         username = input("Enter username: ")
         password = getpass("Enter password: ")
