@@ -2,67 +2,103 @@ import datetime
 from database.db_connection import DB_CONNECTION, DB_CURSOR
 
 class CycleManager:
-
     
     def regenerate_schedule():
         """
-        Automates the Ikimina 'Merry-Go-Round' schedule for a 12-month period.
-        Call this whenever a member is added or removed.
+        Generates a fair Ikimina schedule:
+        - No member gets paid more than others
+        - Members can repeat ONLY after all others have received
         """
         try:
-            # 1. Get all members (Ordered by join date to keep the 'queue' fair)
-            DB_CURSOR.execute("SELECT member_id, member_name FROM members ORDER BY date_added ASC")
+            # 1. Get members
+            DB_CURSOR.execute("""
+                SELECT member_id, member_name 
+                FROM members 
+                ORDER BY date_added ASC
+            """)
             members = DB_CURSOR.fetchall()
-            
+
             if not members:
-                print("[!] No members found. Cannot generate schedule.")
+                print("[!] No members found.")
                 return
 
             total_members = len(members)
             current_date = datetime.date.today()
-            
-            # 2. Clear future cycles that haven't been 'paid out' yet
-            # This allows a fresh start for the new member count
+            current_year = current_date.year
+
+            # 2. Count how many times each member has been paid this year
+            DB_CURSOR.execute("""
+                SELECT cb.member_id, COUNT(*) as payout_count
+                FROM cycle_beneficiaries cb
+                JOIN cycles c ON cb.cycle_id = c.cycle_id
+                WHERE cb.received_funds = 1
+                AND YEAR(c.start_date) = %s
+                GROUP BY cb.member_id
+            """, (current_year,))
+
+            payout_counts = {row['member_id']: row['payout_count'] for row in DB_CURSOR.fetchall()}
+
+            # Default 0 for those never paid
+            for m in members:
+                if m['member_id'] not in payout_counts:
+                    payout_counts[m['member_id']] = 0
+
+            # 3. Clear future unpaid cycles
             DB_CURSOR.execute("DELETE FROM cycle_beneficiaries WHERE received_funds = 0")
             DB_CURSOR.execute("DELETE FROM cycles WHERE start_date >= %s", (current_date,))
-            
-            print(f"--- Regenerating 12-Month Schedule for {total_members} members ---")
 
-            # 3. Generate 12 Monthly Slots
-            for i in range(12):
-                # Calculate month offset
-                # This handles month rollover (e.g., month 13 becomes January next year)
+            print(f"--- Regenerating 12-Month Schedule ---")
+            print(f"Total Members: {total_members}")
+
+            # 4. Determine max fair rounds
+            max_rounds = 12 // total_members   # full fair rounds
+            remainder = 12 % total_members     # extra slots
+
+            print(f"Max Fair Rounds: {max_rounds}, Extra Slots: {remainder}")
+
+            # 5. Build fair queue (repeat members in rounds)
+            fair_queue = []
+
+            for r in range(max_rounds):
+                for m in members:
+                    if payout_counts[m['member_id']] <= r:
+                        fair_queue.append(m)
+
+            # Add remaining slots (only if still fair)
+            for m in members:
+                if len(fair_queue) >= 12:
+                    break
+                if payout_counts[m['member_id']] < max_rounds + 1:
+                    fair_queue.append(m)
+
+            # Trim to 12 months max
+            fair_queue = fair_queue[:12]
+
+            # 6. Generate schedule
+            for i, member in enumerate(fair_queue):
                 start_of_month = (current_date.replace(day=1) + datetime.timedelta(days=32 * i)).replace(day=1)
                 end_of_month = (start_of_month + datetime.timedelta(days=32)).replace(day=1) - datetime.timedelta(days=1)
-                
+
                 cycle_name = start_of_month.strftime("%B %Y")
-                
-                # Assign member using Modulo (%) logic
-                # If 4 members, index 0, 4, and 8 all point to the same member
-                member_to_benefit = members[i % total_members]
-                
-                # Insert into 'cycles'
+
                 DB_CURSOR.execute(
                     "INSERT INTO cycles (cycle_name, start_date, end_date) VALUES (%s, %s, %s)",
                     (cycle_name, start_of_month, end_of_month)
                 )
                 new_cycle_id = DB_CURSOR.lastrowid
-                
-                # Insert into 'cycle_beneficiaries'
-                # Note: 'amount' could be a fixed Ikimina contribution or calculated
+
                 DB_CURSOR.execute(
                     "INSERT INTO cycle_beneficiaries (cycle_id, member_id, amount) VALUES (%s, %s, %s)",
-                    (new_cycle_id, member_to_benefit['member_id'], 0.00) 
+                    (new_cycle_id, member['member_id'], 0.00)
                 )
 
             DB_CONNECTION.commit()
-            print("[+] Success: 12-month rotation generated.")
+
+            print(f"[+] Success: {len(fair_queue)} month(s) scheduled fairly.")
 
         except Exception as e:
             DB_CONNECTION.rollback()
-            print(f"[!] Error regenerating schedule: {e}")
-
-    
+            print(f"[!] Error regenerating schedule: {e}")       
     def mark_payout(beneficiary_id):
         """Records when a member actually receives the Ikimina pot."""
         today = datetime.date.today()
@@ -78,8 +114,8 @@ class CycleManager:
         except Exception as e:
             print(f"Error marking payout: {e}")
 
-    
-    def view_schedule(cls):
+    @staticmethod
+    def view_schedule():
         """Displays the upcoming Merry-Go-Round queue with IDs for easy selection."""
         # Added cb.cycle_benef_id to the SELECT for the payout logic
         query = """

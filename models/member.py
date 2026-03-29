@@ -98,9 +98,9 @@ def manage_members_menu():
     """Admin Menu for Member Management."""
     while True:
         print("\n--- Manage Members ---")
-        print("1. Add New Member (Auto-updates Schedule)")
+        print("1. Add New Member ")
         print("2. View Current Members")
-        print("3. Remove Member (Auto-updates Schedule)")
+        print("3. Remove Member")
         print("4. Return to Admin Menu")
 
         choice = input("Select an option: ").strip()
